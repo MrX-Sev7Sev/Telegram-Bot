@@ -1,18 +1,6 @@
 # Основные
 python-telegram-bot[job-queue]==20.7
 python-dotenv==1.0.0
-
-# База данных
-SQLAlchemy==2.0.23
-psycopg2-binary==2.9.9
-alembic==1.13.1
-
-# Утилиты
-pydantic==2.5.3
-pydantic-settings==2.1.0
-loguru==0.7.2
-requests==2.31.0
-
 # Для разработки (опционально)
 pytest==7.4.3
 pytest-asyncio==0.21.1
