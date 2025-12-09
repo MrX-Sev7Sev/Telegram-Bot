@@ -1,5 +1,5 @@
 # Основные
-python-telegram-bot[job-queue]==20.7
+python-telegram-bot==20.7
 python-dotenv==1.0.0
 # Для разработки (опционально)
 pytest==7.4.3
