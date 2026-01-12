@@ -11,9 +11,7 @@ from telegram.ext import (
     CallbackContext,
 )
 
-# --- КОНФИГУРАЦИЯ ---
-# Токен из переменных окружения или прямо в коде
-TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8532099515:AAE5Y1GX4QT--Nbmkepg4g4Rdhl737zLZhM')
+TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 
 # Логирование
 logging.basicConfig(
@@ -21,21 +19,18 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# --- СОСТОЯНИЯ ДИАЛОГА ---
 (
-    MAIN_MENU,          # 0. Главное меню
-    PROBLEM_TYPE,       # 1. Выбор типа проблемы
-    PROBLEM_WHAT,       # 2. Вопрос: Что случилось?
-    PROBLEM_WHEN,       # 3. Вопрос: Когда?
-    PROBLEM_WHERE,      # 4. Вопрос: Где?
-    PROBLEM_MODEL,      # 5. Вопрос: Модель?
-    INQUIRY_TYPE,       # 6. Тип справки
-    COMPLAINT_TYPE,     # 7. Тип жалобы
-    COMPLAINT_DESC,     # 8. Описание жалобы
-    STATUS_CHECK        # 9. Проверка статуса
+    MAIN_MENU,          
+    PROBLEM_TYPE,      
+    PROBLEM_WHAT,       
+    PROBLEM_WHEN,       
+    PROBLEM_WHERE,      
+    PROBLEM_MODEL,      
+    INQUIRY_TYPE,       
+    COMPLAINT_TYPE,     
+    COMPLAINT_DESC,    
+    STATUS_CHECK        
 ) = range(10)
-
-# --- ФУНКЦИИ: СТАРТ И МЕНЮ ---
 
 async def start(update: Update, context: CallbackContext) -> int:
     """Запуск бота, показывает главное меню."""
@@ -54,7 +49,6 @@ async def main_menu_handler(update: Update, context: CallbackContext) -> int:
     """Распределяет по веткам в зависимости от нажатой кнопки."""
     user_text = update.message.text
     
-    # Ветка 1: Проблемы
     if user_text == "Подача заявки на проблему":
         keyboard = [
             ["Аппаратная проблема", "Программная проблема"],
@@ -66,7 +60,6 @@ async def main_menu_handler(update: Update, context: CallbackContext) -> int:
         )
         return PROBLEM_TYPE
 
-    # Ветка 2: Справки
     elif user_text == "Справка и консультация":
         keyboard = [
             ["Доступ к системам/ресурсам", "Инструкция по работе с ПО"],
@@ -78,7 +71,6 @@ async def main_menu_handler(update: Update, context: CallbackContext) -> int:
         )
         return INQUIRY_TYPE
 
-    # Ветка 3: Жалобы
     elif user_text == "Жалоба и предложение":
         keyboard = [["Жалоба на работу сервиса", "Предложения по улучшению"]]
         await update.message.reply_text(
@@ -87,7 +79,6 @@ async def main_menu_handler(update: Update, context: CallbackContext) -> int:
         )
         return COMPLAINT_TYPE
 
-    # Ветка 4: Статус
     elif user_text == "Проверить статус заявки":
         await update.message.reply_text(
             "Введите номер вашей заявки для проверки статуса:",
@@ -97,8 +88,6 @@ async def main_menu_handler(update: Update, context: CallbackContext) -> int:
     else:
         await update.message.reply_text("Пожалуйста, выберите пункт из меню.")
         return MAIN_MENU
-
-# --- ВЕТКА 1: ОФОРМЛЕНИЕ ЗАЯВКИ ---
 
 async def problem_type_handler(update: Update, context: CallbackContext) -> int:
     """Запоминаем тип, спрашиваем СУТЬ."""
@@ -132,7 +121,6 @@ async def problem_finish(update: Update, context: CallbackContext) -> int:
     context.user_data['p_model'] = update.message.text
     data = context.user_data
     
-    # Генерируем случайный номер заявки
     ticket_num = random.randint(10000, 99999)
     
     sla_info = (
@@ -155,8 +143,6 @@ async def problem_finish(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text(report, parse_mode='Markdown')
     return ConversationHandler.END
 
-# --- ВЕТКА 2: СПРАВКИ ---
-
 async def inquiry_finish(update: Update, context: CallbackContext) -> int:
     choice = update.message.text
     if "специалистом" in choice:
@@ -166,8 +152,6 @@ async def inquiry_finish(update: Update, context: CallbackContext) -> int:
         
     await update.message.reply_text(msg, reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
-
-# --- ВЕТКА 3: ЖАЛОБЫ ---
 
 async def complaint_type_handler(update: Update, context: CallbackContext) -> int:
     context.user_data['c_type'] = update.message.text
@@ -184,8 +168,6 @@ async def complaint_finish(update: Update, context: CallbackContext) -> int:
     )
     return ConversationHandler.END
 
-# --- ВЕТКА 4: СТАТУС ---
-
 async def status_check_handler(update: Update, context: CallbackContext) -> int:
     ticket = update.message.text
     await update.message.reply_text(
@@ -195,8 +177,6 @@ async def status_check_handler(update: Update, context: CallbackContext) -> int:
     )
     return ConversationHandler.END
 
-# --- ОТМЕНА ---
-
 async def cancel(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text(
         "Действие отменено. Напишите /start чтобы начать заново.", 
@@ -204,13 +184,9 @@ async def cancel(update: Update, context: CallbackContext) -> int:
     )
     return ConversationHandler.END
 
-# --- ЗАПУСК ПРИЛОЖЕНИЯ ---
-
 def main() -> None:
-    # Создаем приложение
     application = Application.builder().token(TOKEN).build()
 
-    # Настраиваем логику диалогов
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
@@ -233,7 +209,6 @@ def main() -> None:
     print("🤖 Бот запускается...")
     print(f"✅ Версия python-telegram-bot: 21.x")
     
-    # Запускаем бота
     application.run_polling(
         drop_pending_updates=True,
         allowed_updates=Update.ALL_TYPES
