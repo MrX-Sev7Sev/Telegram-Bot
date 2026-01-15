@@ -1,7 +1,7 @@
 import os
 import logging
-import random
-from dotenv import load_dotenv  
+import uuid
+from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     Application,
@@ -17,12 +17,8 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
 if not TOKEN:
-    print("❌ ОШИБКА: Токен не найден! Проверьте настройки.")
+    print("❌ ОШИБКА: Токен не найден! Проверьте файл .env")
     exit()
-
-
-def main() -> None:
-    application = Application.builder().token(TOKEN).build()
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -49,7 +45,6 @@ def get_main_menu_keyboard():
     ], resize_keyboard=True, one_time_keyboard=True)
 
 async def start(update: Update, context: CallbackContext) -> int:
-    """Запуск бота, показывает главное меню."""
     await update.message.reply_text(
         "👋 Здравствуйте! Это бот Сервисного Центра.\n"
         "Пожалуйста, выберите тип обращения:",
@@ -97,7 +92,10 @@ async def main_menu_handler(update: Update, context: CallbackContext) -> int:
         )
         return STATUS_CHECK
     else:
-        await update.message.reply_text("Пожалуйста, выберите пункт из меню.")
+        await update.message.reply_text(
+            "Пожалуйста, выберите пункт из меню.",
+            reply_markup=get_main_menu_keyboard()
+        )
         return MAIN_MENU
 
 async def problem_type_handler(update: Update, context: CallbackContext) -> int:
@@ -124,11 +122,10 @@ async def get_where_ask_model(update: Update, context: CallbackContext) -> int:
     return PROBLEM_MODEL
 
 async def problem_finish(update: Update, context: CallbackContext) -> int:
-    """Финал заявки: отчет и возврат в меню."""
     context.user_data['p_model'] = update.message.text
     data = context.user_data
     
-    ticket_num = random.randint(10000, 99999)
+    ticket_num = str(uuid.uuid4())[:8].upper()
     
     report = (
         f"✅ **Заявка №{ticket_num} принята!**\n\n"
@@ -137,27 +134,21 @@ async def problem_finish(update: Update, context: CallbackContext) -> int:
         f"⏰ Время: {data.get('p_when')}\n"
         f"📍 Место: {data.get('p_where')}\n"
         f"💻 Оборудование: {data.get('p_model')}\n\n"
-        f"ℹ️ Сохраните номер: {ticket_num}"
+        f"ℹ️ Сохраните номер заявки."
     )
 
     await update.message.reply_text(report, parse_mode='Markdown')
-    
     await update.message.reply_text(
-        "Вы вернулись в главное меню. Чем еще могу помочь?",
+        "Главное меню:",
         reply_markup=get_main_menu_keyboard()
     )
-    
     return MAIN_MENU
 
 async def inquiry_finish(update: Update, context: CallbackContext) -> int:
     choice = update.message.text
-    if "специалистом" in choice:
-        msg = "Оператор скоро подключится к этому чату. Ожидайте."
-    else:
-        msg = f"Информация по теме '{choice}' отправлена на почту."
-        
-    await update.message.reply_text(msg)
+    msg = "Оператор скоро подключится к этому чату. Ожидайте." if "специалистом" in choice else f"Информация по теме '{choice}' отправлена на вашу почту."
     
+    await update.message.reply_text(msg)
     await update.message.reply_text(
         "Главное меню:",
         reply_markup=get_main_menu_keyboard()
@@ -174,7 +165,6 @@ async def complaint_type_handler(update: Update, context: CallbackContext) -> in
 
 async def complaint_finish(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text("Спасибо! Ваше обращение зафиксировано.")
-    
     await update.message.reply_text(
         "Главное меню:",
         reply_markup=get_main_menu_keyboard()
@@ -187,7 +177,6 @@ async def status_check_handler(update: Update, context: CallbackContext) -> int:
         f"Статус заявки №{ticket}: 🛠 **В работе**",
         parse_mode='Markdown'
     )
-    
     await update.message.reply_text(
         "Главное меню:",
         reply_markup=get_main_menu_keyboard()
@@ -202,16 +191,12 @@ async def cancel(update: Update, context: CallbackContext) -> int:
     return MAIN_MENU
 
 def main() -> None:
-    if TOKEN == "ВАШ_ТОКЕН_ЗДЕСЬ":
-        print("❌ ОШИБКА: Вы забыли вставить токен!")
-        return
-
     application = Application.builder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler("start", start),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, start) 
+            MessageHandler(filters.TEXT & ~filters.COMMAND, start)
         ],
         states={
             MAIN_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, main_menu_handler)],
